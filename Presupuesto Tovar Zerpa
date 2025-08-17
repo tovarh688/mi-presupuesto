@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presupuesto 50/30/20</title>
+    <!-- Incluir Tailwind CSS para un diseño moderno y responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Usar una fuente legible -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .input-group label {
+            font-weight: 600;
+            color: #4b5563;
+        }
+        .input-group input {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            width: 100%;
+        }
+        .result-box {
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .result-box.needs { background-color: #e0f2fe; color: #0284c7; }
+        .result-box.wants { background-color: #ecfdf5; color: #059669; }
+        .result-box.savings { background-color: #fffbeb; color: #f59e0b; }
+        .result-box h3 {
+            font-weight: 700;
+        }
+        .result-box .amount {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        .expense-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        .expense-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .expense-item input[type="text"] {
+            flex: 1;
+            padding: 0.5rem;
+        }
+        .expense-item input[type="number"] {
+            flex: 1;
+            padding: 0.5rem;
+            text-align: right;
+        }
+        .difference {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+        .difference.ok { color: #16a34a; }
+        .difference.alert { color: #ef4444; }
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .add-button, .reset-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .add-button {
+            background-color: #2563eb;
+            color: #ffffff;
+        }
+        .add-button:hover {
+            background-color: #1d4ed8;
+        }
+        .reset-button {
+            background-color: #f3f4f6;
+            color: #4b5563;
+            border: 1px solid #d1d5db;
+        }
+        .reset-button:hover {
+            background-color: #e5e7eb;
+        }
+        .total-expenses {
+            margin-top: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="container mx-auto p-6 space-y-8">
+        <h1 class="text-3xl font-bold text-center text-gray-800">Tu Presupuesto 50/30/20</h1>
+        
+        <!-- Sección de Ingresos -->
+        <div class="card p-6">
+            <h2 class="section-title">Ingresos Mensuales</h2>
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="input-group flex-1">
+                    <label for="myIncome">Ingresos de Susana:</label>
+                    <input type="number" id="myIncome" placeholder="0" class="mt-1" oninput="updateBudget()">
+                </div>
+                <div class="input-group flex-1">
+                    <label for="spouseIncome">Ingresos de Hector:</label>
+                    <input type="number" id="spouseIncome" placeholder="0" class="mt-1" oninput="updateBudget()">
+                </div>
+            </div>
+            <div class="total-expenses mt-4">
+                <p>Ingreso Total: <span id="totalIncome">$0</span></p>
+            </div>
+        </div>
+
+        <!-- Sección de Obligaciones Fijas -->
+        <div class="card p-6">
+            <h2 class="section-title">Obligaciones Fijas Mensuales</h2>
+            <div id="fixedObligationsList" class="expense-list">
+                <div class="expense-item">
+                    <input type="text" placeholder="Ej: Arriendo, Crédito de Banco">
+                    <input type="number" class="fixed-expense-input" placeholder="0" oninput="updateBudget()">
+                </div>
+            </div>
+            <button onclick="addFixedObligationItem()" class="mt-2 text-sm text-blue-600 hover:underline">
+                + Añadir Obligación Fija
+            </button>
+            <div class="total-expenses">
+                <p>Total de Obligaciones Fijas: <span id="fixedObligationsTotal">$0</span></p>
+                <p>Ingreso Después de Obligaciones: <span id="incomeAfterObligations">$0</span></p>
+            </div>
+        </div>
+
+        <!-- Sección de Resumen del Presupuesto -->
+        <div class="card p-6">
+            <h2 class="section-title">Resumen del Presupuesto Ideal (50/30/20)</h2>
+            <div class="space-y-4">
+                <div class="result-box needs">
+                    <h3>Necesidades (50%)</h3>
+                    <p class="amount" id="needsIdeal">$0</p>
+                </div>
+                <div class="result-box wants">
+                    <h3>Deseos (30%)</h3>
+                    <p class="amount" id="wantsIdeal">$0</p>
+                </div>
+                <div class="result-box savings">
+                    <h3>Ahorro/Deudas (20%)</h3>
+                    <p class="amount" id="savingsIdeal">$0</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sección de Gastos -->
+        <div class="card p-6">
+            <h2 class="section-title">Gastos Reales</h2>
+            
+            <!-- Gastos en Necesidades -->
+            <div class="mt-6">
+                <h3 class="font-semibold text-lg text-blue-700">Necesidades (50%)</h3>
+                <div id="needsList" class="expense-list">
+                    <div class="expense-item">
+                        <input type="text" placeholder="Ej: Servicios, Mercado">
+                        <input type="number" class="expense-input" placeholder="0" oninput="updateExpenses()">
+                    </div>
+                </div>
+                <button onclick="addExpenseItem('needs')" class="mt-2 text-sm text-blue-600 hover:underline">
+                    + Añadir Gasto
+                </button>
+                <div class="total-expenses">
+                    <p>Total de Gastos en Necesidades: <span id="needsTotal">$0</span></p>
+                    <p>Diferencia: <span id="needsDifference" class="difference ok">$0</span></p>
+                </div>
+            </div>
+            
+            <hr class="my-6">
+
+            <!-- Gastos en Deseos -->
+            <div class="mt-6">
+                <h3 class="font-semibold text-lg text-green-700">Deseos (30%)</h3>
+                <div id="wantsList" class="expense-list">
+                    <div class="expense-item">
+                        <input type="text" placeholder="Ej: Salidas, Cenas, Suscripciones">
+                        <input type="number" class="expense-input" placeholder="0" oninput="updateExpenses()">
+                    </div>
+                </div>
+                <button onclick="addExpenseItem('wants')" class="mt-2 text-sm text-green-600 hover:underline">
+                    + Añadir Gasto
+                </button>
+                <div class="total-expenses">
+                    <p>Total de Gastos en Deseos: <span id="wantsTotal">$0</span></p>
+                    <p>Diferencia: <span id="wantsDifference" class="difference ok">$0</span></p>
+                </div>
+            </div>
+
+            <hr class="my-6">
+            
+            <!-- Gastos en Ahorro/Deudas -->
+            <div class="mt-6">
+                <h3 class="font-semibold text-lg text-yellow-700">Ahorro/Inversión (20%)</h3>
+                <div id="savingsList" class="expense-list">
+                    <div class="expense-item">
+                        <input type="text" placeholder="Ej: Ahorro para Viaje, Inversión">
+                        <input type="number" class="expense-input" placeholder="0" oninput="updateExpenses()">
+                    </div>
+                </div>
+                <button onclick="addExpenseItem('savings')" class="mt-2 text-sm text-yellow-600 hover:underline">
+                    + Añadir Gasto
+                </button>
+                <div class="total-expenses">
+                    <p>Total de Gastos en Ahorro/Inversión: <span id="savingsTotal">$0</span></p>
+                    <p>Diferencia: <span id="savingsDifference" class="difference ok">$0</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="flex justify-center button-group">
+            <button onclick="resetApp()" class="reset-button">Reiniciar</button>
+        </div>
+    </div>
+
+    <script>
+        // Referencias a los elementos del DOM
+        const myIncomeInput = document.getElementById('myIncome');
+        const spouseIncomeInput = document.getElementById('spouseIncome');
+        const totalIncomeSpan = document.getElementById('totalIncome');
+        
+        const fixedObligationsList = document.getElementById('fixedObligationsList');
+        const fixedObligationsTotalSpan = document.getElementById('fixedObligationsTotal');
+        const incomeAfterObligationsSpan = document.getElementById('incomeAfterObligations');
+
+        const needsIdealSpan = document.getElementById('needsIdeal');
+        const wantsIdealSpan = document.getElementById('wantsIdeal');
+        const savingsIdealSpan = document.getElementById('savingsIdeal');
+
+        const needsList = document.getElementById('needsList');
+        const wantsList = document.getElementById('wantsList');
+        const savingsList = document.getElementById('savingsList');
+
+        const needsTotalSpan = document.getElementById('needsTotal');
+        const wantsTotalSpan = document.getElementById('wantsTotal');
+        const savingsTotalSpan = document.getElementById('savingsTotal');
+        
+        const needsDifferenceSpan = document.getElementById('needsDifference');
+        const wantsDifferenceSpan = document.getElementById('wantsDifference');
+        const savingsDifferenceSpan = document.getElementById('savingsDifference');
+        
+        // Función principal que actualiza todo el presupuesto
+        function updateBudget() {
+            // 1. Calcular el ingreso total
+            const myIncome = parseFloat(myIncomeInput.value) || 0;
+            const spouseIncome = parseFloat(spouseIncomeInput.value) || 0;
+            const totalIncome = myIncome + spouseIncome;
+            totalIncomeSpan.textContent = `$${totalIncome.toFixed(2)}`;
+
+            // 2. Calcular las obligaciones fijas y el ingreso restante
+            const fixedInputs = fixedObligationsList.querySelectorAll('.fixed-expense-input');
+            const fixedObligationsTotal = Array.from(fixedInputs).reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
+            const incomeAfterObligations = totalIncome - fixedObligationsTotal;
+
+            fixedObligationsTotalSpan.textContent = `$${fixedObligationsTotal.toFixed(2)}`;
+            incomeAfterObligationsSpan.textContent = `$${incomeAfterObligations.toFixed(2)}`;
+
+            // 3. Calcular los montos ideales según la regla 50/30/20, usando el ingreso restante
+            const needsIdeal = incomeAfterObligations * 0.50;
+            const wantsIdeal = incomeAfterObligations * 0.30;
+            const savingsIdeal = incomeAfterObligations * 0.20;
+
+            // 4. Mostrar los montos ideales
+            needsIdealSpan.textContent = `$${needsIdeal.toFixed(2)}`;
+            wantsIdealSpan.textContent = `$${wantsIdeal.toFixed(2)}`;
+            savingsIdealSpan.textContent = `$${savingsIdeal.toFixed(2)}`;
+
+            // 5. Actualizar los gastos para comparar con el presupuesto
+            updateExpenses();
+        }
+
+        // Función que actualiza el total de gastos para cada categoría
+        function updateExpenses() {
+            const needsInputs = needsList.querySelectorAll('.expense-input');
+            const wantsInputs = wantsList.querySelectorAll('.expense-input');
+            const savingsInputs = savingsList.querySelectorAll('.expense-input');
+            
+            const needsTotal = Array.from(needsInputs).reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
+            const wantsTotal = Array.from(wantsInputs).reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
+            const savingsTotal = Array.from(savingsInputs).reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
+            
+            needsTotalSpan.textContent = `$${needsTotal.toFixed(2)}`;
+            wantsTotalSpan.textContent = `$${wantsTotal.toFixed(2)}`;
+            savingsTotalSpan.textContent = `$${savingsTotal.toFixed(2)}`;
+            
+            const myIncome = parseFloat(myIncomeInput.value) || 0;
+            const spouseIncome = parseFloat(spouseIncomeInput.value) || 0;
+            const totalIncome = myIncome + spouseIncome;
+            const fixedInputs = fixedObligationsList.querySelectorAll('.fixed-expense-input');
+            const fixedObligationsTotal = Array.from(fixedInputs).reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
+            const incomeAfterObligations = totalIncome - fixedObligationsTotal;
+
+            const needsIdeal = incomeAfterObligations * 0.50;
+            const wantsIdeal = incomeAfterObligations * 0.30;
+            const savingsIdeal = incomeAfterObligations * 0.20;
+
+            updateDifference(needsTotal, needsIdeal, needsDifferenceSpan);
+            updateDifference(wantsTotal, wantsIdeal, wantsDifferenceSpan);
+            updateDifference(savingsTotal, savingsIdeal, savingsDifferenceSpan);
+        }
+
+        // Función auxiliar para actualizar la diferencia y el color
+        function updateDifference(currentTotal, idealTotal, differenceSpan) {
+            const difference = idealTotal - currentTotal;
+            differenceSpan.textContent = `$${difference.toFixed(2)}`;
+            
+            if (difference >= 0) {
+                differenceSpan.classList.remove('alert');
+                differenceSpan.classList.add('ok');
+            } else {
+                differenceSpan.classList.remove('ok');
+                differenceSpan.classList.add('alert');
+            }
+        }
+        
+        // Función para añadir un nuevo campo de obligación fija
+        function addFixedObligationItem() {
+            const list = document.getElementById('fixedObligationsList');
+            const newItem = document.createElement('div');
+            newItem.className = 'expense-item';
+            newItem.innerHTML = `
+                <input type="text" placeholder="Descripción">
+                <input type="number" class="fixed-expense-input" placeholder="0" oninput="updateBudget()">
+                <button onclick="this.parentNode.remove(); updateBudget();" class="text-gray-400 hover:text-red-500">
+                    &times;
+                </button>
+            `;
+            list.appendChild(newItem);
+            newItem.querySelector('input[type="number"]').focus();
+        }
+
+        // Función para añadir un nuevo campo de gasto de Necesidades, Deseos, Ahorro
+        function addExpenseItem(category) {
+            const list = document.getElementById(`${category}List`);
+            const newItem = document.createElement('div');
+            newItem.className = 'expense-item';
+            newItem.innerHTML = `
+                <input type="text" placeholder="Descripción">
+                <input type="number" class="expense-input" placeholder="0" oninput="updateExpenses()">
+                <button onclick="this.parentNode.remove(); updateExpenses();" class="text-gray-400 hover:text-red-500">
+                    &times;
+                </button>
+            `;
+            list.appendChild(newItem);
+            newItem.querySelector('input[type="number"]').focus();
+        }
+
+        // Función para reiniciar la aplicación
+        function resetApp() {
+            myIncomeInput.value = '';
+            spouseIncomeInput.value = '';
+            
+            const allLists = [fixedObligationsList, needsList, wantsList, savingsList];
+            allLists.forEach(list => {
+                while (list.children.length > 1) {
+                    list.removeChild(list.lastChild);
+                }
+                const firstInput = list.querySelector('input[type="number"]');
+                if (firstInput) {
+                    firstInput.value = '';
+                }
+            });
+            
+            updateBudget();
+        }
+        
+        // Inicializar la aplicación al cargar la página
+        window.onload = updateBudget;
+    </script>
+</body>
+</html>
